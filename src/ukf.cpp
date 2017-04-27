@@ -27,10 +27,21 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 2.0;
+  //std_a_ = 2.5;
+  //std_a_ = 0.05;
+  //std_a_ = 1.28;
+  // TODO TRY
+  std_a_ = 0.6;
+  //std_a_ = 1.0;
+  //std_a_ = 1.75;
+  //std_a_ = 2.0;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 0.3;
+  //std_yawdd_ = 0.4;
+  //std_yawdd_ = 0.275;
+  std_yawdd_ = 0.6;
+  // TODO TRY
+  //std_yawdd_ = 0.55;
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -61,10 +72,9 @@ UKF::UKF() {
   Xsig_pred_ = MatrixXd(n_x_, n_sig);
   P_ << 1.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 1.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 1.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 0.0, 1.0;
-
+        0.0, 0.0, 20.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 13.15, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.1;
   // Set weights
   weights_ = VectorXd(n_sig);
   weights_(0) = (double)lambda_ / (lambda_ + n_aug_);
@@ -88,8 +98,10 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   // Initialization
   if (!is_initialized_) {
     // TODO
-    x_ << 1,1,1,1,1;
+    //x_ << 1,1,1,1,1;
     //x_ << 0.0,0.0,0.0,0.0,0.0;
+    x_ << 0.0,0.0,0.0,0,0.0;
+    //x_ << 0.0,0.0,0.0,2.1927,0.0;
     if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
       float rho = meas_package.raw_measurements_(0);
       float phi = meas_package.raw_measurements_(1);
@@ -97,7 +109,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       x_(0) = rho * cos(phi);
       x_(1) = rho * sin(phi);
       // TODO
-      //x_(2) = rhodot;
+      x_(2) = rhodot;
+      P_(2,2) = 1;
     }
     else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
       x_(0) = meas_package.raw_measurements_(0);
@@ -375,6 +388,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   //update state mean and covariance matrix
   x_ += K * z_diff;
   P_ -= K * S * K.transpose();
+
+  NIS_laser_ = z_diff.transpose() * S.inverse() * z_diff;
+
 }
 
 /**
@@ -570,4 +586,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   P_ = P_ - K*S*K.transpose();
   */
   /* SOLUTION END */
+
+  NIS_radar_ = z_diff.transpose() * S.inverse() * z_diff;
 }

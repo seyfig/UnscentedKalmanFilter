@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
   out_file_ << "vy_ground_truth" << "\n";
 
   // TODOD
-  //int debugi = 0;
+  int debugi = 0;
   for (size_t k = 0; k < number_of_measurements; ++k) {
     // Call the UKF-based fusion
     // TODOD
@@ -232,10 +232,10 @@ int main(int argc, char* argv[]) {
     for(int i=0; i < residual.size(); ++i){
       residual(i) = residual(i) * residual(i);
     }
-    cout<<"i:"<<debugi<<" ; res: "<<residual.transpose()<<endl;
+    */
+    cout<<debugi<<",";
     debugi++;
     //if (debugi > 7) {break;}
-    */
   }
 
   // compute the accuracy (RMSE)
