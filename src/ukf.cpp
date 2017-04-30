@@ -3,6 +3,7 @@
 #include "Eigen/Dense"
 #include <iostream>
 // TODOD
+#include <iomanip>
 #include <sys/time.h>
 
 using namespace std;
@@ -97,6 +98,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   */
   // Initialization
   if (!is_initialized_) {
+    cout<<"before init"<<endl;
     // TODO
     //x_ << 1,1,1,1,1;
     //x_ << 0.0,0.0,0.0,0.0,0.0;
@@ -129,15 +131,21 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
         ||
         (!use_laser_ &&
           meas_package.sensor_type_ == MeasurementPackage::LASER)) {
+      cout<<"sensor skipped:"<<meas_package.sensor_type_<<endl;
       return;
     }
     float dt = (meas_package.timestamp_ - time_us_) / 1000000.0;
     time_us_ = meas_package.timestamp_;
+    cout<<"before prediction"<<endl;
     Prediction(dt);
+    cout<<"after prediction"<<endl;
     if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+      cout<<"before update radar"<<endl;
       UpdateRadar(meas_package);
+      cout<<"after update radar"<<endl;
     }
     else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+      cout<<"before update laser"<<endl;
       UpdateLidar(meas_package);
     }
   }
@@ -204,7 +212,6 @@ void UKF::Prediction(double delta_t) {
     double nu_a = Xsig_aug(5,i);
     double nu_yawdd = Xsig_aug(6,i);
 
-    /* MATRIX  DIFFERENT RESULT WITH SOLUTION*/
     double delta_t2 = delta_t * delta_t;
     double yawd_dt = yawd * delta_t;
 
@@ -225,48 +232,11 @@ void UKF::Prediction(double delta_t) {
     Xsig_pred_(2,i) = v + nu_a * delta_t;
     Xsig_pred_(3,i) = yaw + yawd_dt + 0.5 * nu_yawdd * delta_t2;
     Xsig_pred_(4,i) = yawd + nu_yawdd * delta_t;
-    /* Matrix END */
-
-    /* SOLUTION */
-    /*
-    //predicted state values
-    double px_p, py_p;
-
-    //avoid division by zero
-    if (fabs(yawd) > 0.001) {
-        px_p = p_x + v/yawd * ( sin (yaw + yawd*delta_t) - sin(yaw));
-        py_p = p_y + v/yawd * ( cos(yaw) - cos(yaw+yawd*delta_t) );
-    }
-    else {
-        px_p = p_x + v*delta_t*cos(yaw);
-        py_p = p_y + v*delta_t*sin(yaw);
-    }
-
-    double v_p = v;
-    double yaw_p = yaw + yawd*delta_t;
-    double yawd_p = yawd;
-
-    //add noise
-    px_p = px_p + 0.5*nu_a*delta_t*delta_t * cos(yaw);
-    py_p = py_p + 0.5*nu_a*delta_t*delta_t * sin(yaw);
-    v_p = v_p + nu_a*delta_t;
-
-    yaw_p = yaw_p + 0.5*nu_yawdd*delta_t*delta_t;
-    yawd_p = yawd_p + nu_yawdd*delta_t;
-
-    //write predicted sigma point into right column
-    Xsig_pred_(0,i) = px_p;
-    Xsig_pred_(1,i) = py_p;
-    Xsig_pred_(2,i) = v_p;
-    Xsig_pred_(3,i) = yaw_p;
-    Xsig_pred_(4,i) = yawd_p;*/
-    /* SOLUTION END*/
   }
 /*******************************************************************************
  * Predicted Mean Covariance
  ******************************************************************************/
 
-  /* MATRIX */
   // Predict state mean
   MatrixXd x_sum = Xsig_pred_.array().rowwise() * weights_.transpose().array();
   x_ = x_sum.rowwise().sum();
@@ -276,35 +246,14 @@ void UKF::Prediction(double delta_t) {
 
   //angle normalization
   for (int i=0; i < n_sig; i++) {
-    while (X_abs(3,i) > M_PI) X_abs(3,i) -= 2.0 * M_PI;
-    while (X_abs(3,i) < -M_PI) X_abs(3,i) += 2.0 * M_PI;
+    X_abs(3,i) = NormalizeAngle(X_abs(3,i));
   }
 
+  //cout<<"Debug X_abs_w"<<endl;
+  // TODO calculating twice, prediction and update
   MatrixXd X_abs_w = X_abs.array().rowwise() * weights_.transpose().array();
+  //cout<<"Debug P_"<<endl;
   P_ = X_abs_w * X_abs.transpose();
-
-  /* MATRIX END */
-  /* SOLUTION*/
-  //predicted state mean
-  x_.fill(0.0);
-  for (int i = 0; i < n_sig; i++) {  //iterate over sigma points
-    x_ = x_ + weights_(i) * Xsig_pred_.col(i);
-  }
-
-  //predicted state covariance matrix
-  P_.fill(0.0);
-  for (int i = 0; i < n_sig; i++) {  //iterate over sigma points
-
-    // state difference
-    VectorXd x_diff = Xsig_pred_.col(i) - x_;
-    //angle normalization
-    while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
-    while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
-
-    P_ = P_ + weights_(i) * x_diff * x_diff.transpose() ;
-  }
-  /* SOLUTION END*/
-
 }
 
 /**
@@ -356,6 +305,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   //angle normalization
   for (int i=0; i < n_sig; i++) {
+    // TODO call function
+    // TODO do not calculate X_abs again
+    //X_abs(3,i)
     while (X_abs(3,i) > M_PI) X_abs(3,i) -= 2.0 * M_PI;
     while (X_abs(3,i) < -M_PI) X_abs(3,i) += 2.0 * M_PI;
     while (Z_abs(1,i) > M_PI) Z_abs(1,i) -= 2.0 * M_PI;
@@ -444,8 +396,20 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //calculate cross correlation matrix
   MatrixXd X_abs = Xsig_pred_.array().colwise() - x_.array();
 
+
+  //for very big yaw
+  int big_yaw_pi = 10 * M_PI;
+  double pi2 = 2.0 * M_PI;
+
   //angle normalization
   for (int i=0; i < n_sig; i++) {
+    //for very big yaw
+    if (fabs(X_abs(3,i)) > big_yaw_pi) {
+      X_abs(3,i) -= floor(X_abs(3,i) / pi2) * (pi2);
+    }
+    if (fabs(Z_abs(1,i)) > big_yaw_pi) {
+      Z_abs(1,i) -= floor(Z_abs(1,i) / pi2) * (pi2);
+    }
     while (X_abs(3,i) > M_PI) X_abs(3,i) -= 2.0 * M_PI;
     while (X_abs(3,i) < -M_PI) X_abs(3,i) += 2.0 * M_PI;
     while (Z_abs(1,i) > M_PI) Z_abs(1,i) -= 2.0 * M_PI;
@@ -531,12 +495,46 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   VectorXd z_diff = z - z_pred;
 
   //angle normalization
+  //for very big yaw
+  if (fabs(z_diff(1)) > big_yaw_pi) {
+    z_diff(1) -= floor(z_diff(1) / pi2) * (pi2);
+  }
   while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
   while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
 
   //update state mean and covariance matrix
   x_ += K * z_diff;
+
+  // TODO TEST
+  //angle normalization
+  //for very big yaw
+  if (fabs(x_(3)) > big_yaw_pi) {
+    cout<<"!!!!! x3: "<<x_(3);
+    x_(3) -= floor(x_(3) / pi2) * (pi2);
+    cout<<" ; "<<x_(3)<<endl;
+  }
+  while (x_(3)> M_PI) x_(3)-=2.*M_PI;
+  while (x_(3)<-M_PI) x_(3)+=2.*M_PI;
+
+  // TODO TEST
+  //angle normalization
+  //for very big yaw
+  if (fabs(x_(4)) > big_yaw_pi) {
+    cout<<"!!!!! x4: "<<x_(4);
+    x_(4) -= floor(x_(4) / pi2) * (pi2);
+    cout<<" ; "<<x_(4)<<endl;
+  }
+  while (x_(4)> M_PI) x_(4)-=2.*M_PI;
+  while (x_(4)<-M_PI) x_(4)+=2.*M_PI;
+
   P_ -= K * S * K.transpose();
+
+  if (P_(4,4) > 1000.0) {
+    cout<<"P:"<<endl<<P_<<endl;
+    cout<<"x:"<<endl<<x_<<endl;
+    cout<<"meas_package:"<<endl<<meas_package.raw_measurements_<<endl;
+
+  }
 
   /* MATRIX END */
 
@@ -588,4 +586,24 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   /* SOLUTION END */
 
   NIS_radar_ = z_diff.transpose() * S.inverse() * z_diff;
+}
+
+/**
+ * Normalizes the angle, yaw or phi. If angle is too big, subtracts the
+ * part.
+ * @param double angle
+ * @return The normalized angle
+ */
+double UKF::NormalizeAngle(double angle) {
+  //for very high yaw
+  int big_yaw_pi = 1000.0 * M_PI;
+  double pi2 = 2.0 * M_PI;
+  if (fabs(angle) > big_yaw_pi) {
+    angle -= floor(angle / pi2) * (pi2);
+  }
+
+  while (angle > M_PI) angle -= 2.0 * M_PI;
+  while (angle < -M_PI) angle += 2.0 * M_PI;
+
+  return angle;
 }
