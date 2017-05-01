@@ -4,6 +4,8 @@
 #include <sstream>
 #include <vector>
 #include <stdlib.h>
+// TODO Measure RUNTIME
+#include <chrono>
 #include "Eigen/Dense"
 #include "ukf.h"
 #include "ground_truth_package.h"
@@ -51,6 +53,8 @@ void check_files(ifstream& in_file, string& in_name,
 }
 
 int main(int argc, char* argv[]) {
+  // TODO time
+  auto start_time = std::chrono::high_resolution_clock::now();
 
   check_arguments(argc, argv);
 
@@ -250,7 +254,11 @@ int main(int argc, char* argv[]) {
   if (in_file_.is_open()) {
     in_file_.close();
   }
+  // TODO time
+  auto end_time = std::chrono::high_resolution_clock::now();
+  auto time = end_time - start_time;
 
+  cout<<"Duration: "<<std::chrono::duration_cast<std::chrono::microseconds>(time).count()<<endl;
   cout << "Done!" << endl;
   return 0;
 }

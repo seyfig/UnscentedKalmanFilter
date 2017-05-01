@@ -32,6 +32,9 @@ public:
   ///* predicted sigma points matrix
   MatrixXd Xsig_pred_;
 
+  ///* Weighted Xsig_pred_ and x_ diff, needed in both prediction and update
+  MatrixXd X_abs_w_;
+
   ///* time when the state is true, in us
   long long time_us_;
 
