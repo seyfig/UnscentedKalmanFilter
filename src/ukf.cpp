@@ -1,3 +1,5 @@
+//TODO print only x, before prediction, after prediction, after update
+
 #include "ukf.h"
 #include "tools.h"
 #include "Eigen/Dense"
@@ -16,7 +18,7 @@ using std::vector;
  */
 UKF::UKF() {
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = true;
+  use_laser_ = false;
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
@@ -60,11 +62,6 @@ UKF::UKF() {
   int n_sig = 2 * n_aug_ + 1;
   lambda_ = 3 - n_aug_;
   Xsig_pred_ = MatrixXd(n_x_, n_sig);
-  P_ << 1.0, 0.0, 0.0, 0.0, 0.0,
-        0.0, 1.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 20.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 13.15, 0.0,
-        0.0, 0.0, 0.0, 0.0, 0.1;
   // Set weights
   weights_ = VectorXd(n_sig);
   weights_(0) = (double)lambda_ / (lambda_ + n_aug_);
@@ -88,6 +85,11 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   // Initialization
   if (!is_initialized_) {
     x_ << 0.0,0.0,0.0,0,0.0;
+    P_ << 1.0, 0.0, 0.0, 0.0, 0.0,
+          0.0, 1.0, 0.0, 0.0, 0.0,
+          0.0, 0.0, 20.0, 0.0, 0.0,
+          0.0, 0.0, 0.0, 13.15, 0.0,
+          0.0, 0.0, 0.0, 0.0, 0.1;
     if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
       float rho = meas_package.raw_measurements_(0);
       float phi = meas_package.raw_measurements_(1);
@@ -228,6 +230,7 @@ void UKF::Prediction(double delta_t) {
 
   // Will be used in Update also
   X_abs_w_ = X_abs.array().rowwise() * weights_.transpose().array();
+
   P_ = X_abs_w_ * X_abs.transpose();
 }
 
@@ -277,9 +280,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   //angle normalization
   for (int i=0; i < n_sig; i++) {
-    // TODO call function
-    while (Z_abs(1,i) > M_PI) Z_abs(1,i) -= 2.0 * M_PI;
-    while (Z_abs(1,i) < -M_PI) Z_abs(1,i) += 2.0 * M_PI;
+    Z_abs(1,i) = NormalizeAngle(Z_abs(1,i));
   }
   MatrixXd Z_abs_w = Z_abs.array().rowwise() * weights_.transpose().array();
   S = Z_abs_w * Z_abs.transpose();
@@ -289,7 +290,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   S(1,1) += std_laspy_ * std_laspy_;
 
 /*******************************************************************************
- * Predicted Mean Covariance
+ * UKF Radar Update
  ******************************************************************************/
 
   MatrixXd Tc = X_abs_w_ * Z_abs.transpose();
@@ -302,15 +303,20 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   VectorXd z_diff = z - z_pred;
 
   //angle normalization
-  while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
-  while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+  z_diff(1) = NormalizeAngle(z_diff(1));
 
-  //update state mean and covariance matrix
-  x_ += K * z_diff;
-  P_ -= K * S * K.transpose();
 
   NIS_laser_ = z_diff.transpose() * S.inverse() * z_diff;
 
+  // prevent P from diverging
+  if (NIS_laser_ > 100.0) {
+    is_initialized_ = false;
+  }
+  else {
+    //update state mean and covariance matrix
+    x_ += K * z_diff;
+    P_ -= K * S * K.transpose();
+  }
 }
 
 /**
@@ -360,18 +366,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //calculate measurement covariance matrix S
   MatrixXd Z_abs = Zsig.array().colwise() - z_pred.array();
 
-  //for very big yaw
-  int big_yaw_pi = 10 * M_PI;
-  double pi2 = 2.0 * M_PI;
-
   //angle normalization
   for (int i=0; i < n_sig; i++) {
-    //for very big yaw
-    if (fabs(Z_abs(1,i)) > big_yaw_pi) {
-      Z_abs(1,i) -= floor(Z_abs(1,i) / pi2) * (pi2);
-    }
-    while (Z_abs(1,i) > M_PI) Z_abs(1,i) -= 2.0 * M_PI;
-    while (Z_abs(1,i) < -M_PI) Z_abs(1,i) += 2.0 * M_PI;
+    Z_abs(1,i) = NormalizeAngle(Z_abs(1,i));
   }
 
   MatrixXd Z_abs_w = Z_abs.array().rowwise() * weights_.transpose().array();
@@ -398,49 +395,18 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   VectorXd z_diff = z - z_pred;
 
   //angle normalization
-  //for very big yaw
-  if (fabs(z_diff(1)) > big_yaw_pi) {
-    z_diff(1) -= floor(z_diff(1) / pi2) * (pi2);
-  }
-  while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
-  while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
-
-  //update state mean and covariance matrix
-  x_ += K * z_diff;
-
-  // TODO TEST
-  //angle normalization
-  //for very big yaw
-  // TODO x_(3) should not be larger than ? PI
-  if (fabs(x_(3)) > big_yaw_pi) {
-    cout<<"!!!!! x3: "<<x_(3);
-    x_(3) -= floor(x_(3) / pi2) * (pi2);
-    cout<<" ; "<<x_(3)<<endl;
-  }
-  while (x_(3)> M_PI) x_(3)-=2.*M_PI;
-  while (x_(3)<-M_PI) x_(3)+=2.*M_PI;
-
-  // TODO TEST
-  //angle normalization
-  //for very big yaw
-  if (fabs(x_(4)) > big_yaw_pi) {
-    cout<<"!!!!! x4: "<<x_(4);
-    x_(4) -= floor(x_(4) / pi2) * (pi2);
-    cout<<" ; "<<x_(4)<<endl;
-  }
-  while (x_(4)> M_PI) x_(4)-=2.*M_PI;
-  while (x_(4)<-M_PI) x_(4)+=2.*M_PI;
-
-  P_ -= K * S * K.transpose();
-
-  if (P_(4,4) > 1000.0) {
-    cout<<"P:"<<endl<<P_<<endl;
-    cout<<"x:"<<endl<<x_<<endl;
-    cout<<"meas_package:"<<endl<<meas_package.raw_measurements_<<endl;
-
-  }
+  z_diff(1) = NormalizeAngle(z_diff(1));
 
   NIS_radar_ = z_diff.transpose() * S.inverse() * z_diff;
+  // prevent P from diverging
+  if (NIS_radar_ > 100.0) {
+    is_initialized_ = false;
+  }
+  else {
+    //update state mean and covariance matrix
+    x_ += K * z_diff;
+    P_ -= K * S * K.transpose();
+  }
 }
 
 /**
@@ -451,7 +417,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
  */
 double UKF::NormalizeAngle(double angle) {
   //for very high yaw
-  int big_yaw_pi = 1000.0 * M_PI;
+  int big_yaw_pi = 100.0 * M_PI;
   double pi2 = 2.0 * M_PI;
   if (fabs(angle) > big_yaw_pi) {
     angle -= floor(angle / pi2) * (pi2);
