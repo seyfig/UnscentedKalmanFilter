@@ -4,7 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <stdlib.h>
-// TODO Measure RUNTIME
+// Measure RUNTIME
 #include <chrono>
 #include "Eigen/Dense"
 #include "ukf.h"
@@ -53,7 +53,7 @@ void check_files(ifstream& in_file, string& in_name,
 }
 
 int main(int argc, char* argv[]) {
-  // TODO time
+  // Measure execution time
   auto start_time = std::chrono::high_resolution_clock::now();
 
   check_arguments(argc, argv);
@@ -161,12 +161,8 @@ int main(int argc, char* argv[]) {
   out_file_ << "vx_ground_truth" << "\t";
   out_file_ << "vy_ground_truth" << "\n";
 
-  // TODOD
-  int debugi = 0;
   for (size_t k = 0; k < number_of_measurements; ++k) {
     // Call the UKF-based fusion
-    // TODOD
-    //cout<<"k:"<<k<<"; s_type: "<<measurement_pack_list[k].sensor_type_<<endl;
     ukf.ProcessMeasurement(measurement_pack_list[k]);
 
     // timestamp
@@ -224,22 +220,6 @@ int main(int argc, char* argv[]) {
     estimations.push_back(ukf_x_cartesian_);
     ground_truth.push_back(gt_pack_list[k].gt_values_);
 
-    /* TODOD DEBUG SQUARE ERROR*/
-    /*
-    //cout<<"debug1"<<endl;
-    VectorXd e = ukf_x_cartesian_;
-    //cout<<"debug2"<<endl<<e<<endl;
-    VectorXd g = gt_pack_list[k].gt_values_;
-    //cout<<"debug3"<<endl<<g<<endl;
-    VectorXd residual = e - g;
-    //cout<<"debug4"<<endl;
-    for(int i=0; i < residual.size(); ++i){
-      residual(i) = residual(i) * residual(i);
-    }
-    */
-    cout<<debugi<<",";
-    debugi++;
-    //if (debugi > 7) {break;}
   }
 
   // compute the accuracy (RMSE)
@@ -254,7 +234,7 @@ int main(int argc, char* argv[]) {
   if (in_file_.is_open()) {
     in_file_.close();
   }
-  // TODO time
+  // Measure execution time
   auto end_time = std::chrono::high_resolution_clock::now();
   auto time = end_time - start_time;
 

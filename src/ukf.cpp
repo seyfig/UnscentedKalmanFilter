@@ -1,12 +1,7 @@
-//TODO print only x, before prediction, after prediction, after update
-
 #include "ukf.h"
 #include "tools.h"
 #include "Eigen/Dense"
 #include <iostream>
-// TODOD
-#include <iomanip>
-#include <sys/time.h>
 
 using namespace std;
 using Eigen::MatrixXd;
@@ -18,7 +13,7 @@ using std::vector;
  */
 UKF::UKF() {
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = false;
+  use_laser_ = true;
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
