@@ -3,18 +3,17 @@
 (https://github.com/udacity/CarND-Unscented-Kalman-Filter-Project)
 
 [//]: # (References)
-[Report]: ./writeup_report.md "Project Report"
 [image_nfl]: ./images/new_fusion_lidar.png "New Fusion Lidar"
 [image_nfr]: ./images/new_fusion_radar.png "New Fusion Radar"
 [image_nlo]: ./images/new_lidar.png "New Lidar Only"
 [image_nro]: ./images/new_radar.png "New Radar Only"
 [image_1fl]: ./images/old1_fusion_lidar.png "Old1 Fusionarp Example"
 [image_1fr]: ./images/old1_fusion_radar.png "Old1 Fusionary"
-[image_1lo]: ./images/old1_lidar.png "Old1 Lidar Only"ual"
+[image_1lo]: ./images/old1_lidar.png "Old1 Lidar Only"
 [image_1ro]: ./images/old1_radar.png "Old1 Radar Only"
 [image_2fl]: ./images/old2_fusion_lidar.png "Old2 Fusionrp Example"
 [image_2fr]: ./images/old2_fusion_radar.png "Old2 Fusionry"
-[image_2lo]: ./images/old2_lidar.png "Old2 Lidar Only"al"
+[image_2lo]: ./images/old2_lidar.png "Old2 Lidar Only"
 [image_2ro]: ./images/old2_radar.png "Old2 Radar Only"
 
 The goals / steps of this project are the following:
@@ -35,6 +34,7 @@ The RMSE values for three files and some of the experimented parameters are give
 The Requi. column has the requirement values specified in the rubric. Best_old2 column has the parameters that worked best on the old2 data, similarly Best_old1 on the old1 data and Best_new on the new data. The Low.RMSE column has the parameters that were result in the lowest average RMSE. The selected column has the selected parameters.
 
 |   File     |  Parameter    |  Requi. | Best_old2 | Best_old1 |           |           |           |           |           | Best_new  | Low.RMSE  |           |  SELECTED |
+|:----------:|:-------------:|:-------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|
 |            |  avg RMSE     |  REQ    |  0.30322  |    N/A    |  0.28465  |  0.26635  |  0.26219  |  0.26205  |  0.26064  |           |  0.25766  |  0.25908  |  0.25824  |
 |            |  P(0,0)       |  REQ    |  1        |    1      |  1        |  1        |  1        |  1        |  1        |  1        |  0.5      |  2        |  1        |
 |            |  P(1,1)       |  REQ    |  1        |    1      |  1        |  1        |  1        |  1        |  1        |  1        |  0.5      |  2        |  1        |
@@ -48,7 +48,6 @@ The Requi. column has the requirement values specified in the rubric. Best_old2 
 |            |  x(4)         |  REQ    |  0        |    0      |  0        |  0        |  0        |  0        |  0        |  0        |  0        |  0        |  0        |
 |            |  std_a_       |  REQ    |  1.28     |    1.28   |  1.28     |  0.6      |  0.6      |  0.6      |  0.6      |  0.6      |  0.6      |  0.6      |  0.6      |
 |            |  std_yawdd_   |  REQ    |  0.275    |    1      |  0.6      |  0.6      |  0.6      |  0.6      |  0.6      |  0.6      |  0.6      |  0.6      |  0.6      |
-|:----------:|:-------------:|:-------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|
 |   NEW      |  px           |  0.090  |  0.07266  |  0.06612  |  0.06688  |  0.06135  |  0.06122  |  0.06122  |  0.06118  |  0.06194  |  0.06107  |  0.06106  |  0.06107  |
 |   NEW      |  py           |  0.100  |  0.08405  |  0.08237  |  0.08132  |  0.08355  |  0.08397  |  0.08397  |  0.08290  |  0.08425  |  0.08272  |  0.08315  |  0.08282  |
 |   NEW      |  vx           |  0.400  |  0.34609  |  0.32535  |  0.32269  |  0.31807  |  0.27277  |  0.27277  |  0.27266  |  0.15068  |  0.27395  |  0.27215  |  0.27259  |
